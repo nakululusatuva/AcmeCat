@@ -1,0 +1,11 @@
+[Unit]
+Description=AcmeCat
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/acmecat -m client -c /etc/acmecat/config_client.json --secure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+{
+	"log": {
+		"dir": "/var/log"
+	},
+	"client": {
+		"host": "acme.example.com",
+		"port": 55000,
+		"server_public_key": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA513CrbHjrxoHh43Sf4ta\nEXAMPLE\nG9wAh/RVPh1kXMs4UjsjXRcCAwEAAQ==\n-----END PUBLIC KEY-----",
+		"private_key": "-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-256-CBC,AE56A0A299B8600579E8C0D24AD6BBEC\n\nAvjSciwKM6pPRAd9Lb5MPWgb/mOqRXchBWChjrvvMCeKobETM0lVnr7hJURbKAsV\nEXAMPLE\njU7m+bgaZajQmhhoA0A/Fb1iJ\n-----END RSA PRIVATE KEY-----\n",
+		"private_key_passphrase": "123456",
+		"distribution": {
+			"save_dir": "/var/www/certificates",
+			"cron_expression": "0 0 8 1 */1 ?",
+			"shell_command": "nginx -s reload"
+		}
+	}
+}
