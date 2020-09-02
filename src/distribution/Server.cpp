@@ -206,7 +206,7 @@ void Server::run()
 	int workersNum = globalConfigs["server"]["workers"].asInt();
 	std::string cronExpression = globalConfigs["server"]["acme"]["cron_expression"].asString();
 	auto cert = std::make_shared<CertCache>();
-	cert->loadFromFile(globalConfigs["server"]["acme"]["save_dir"].asString()); // Try to load the cached cert from disk
+	cert->tryLoadFromFile(globalConfigs["server"]["acme"]["save_dir"].asString()); // Try to load the cached cert from disk
 	
 	/* Create thread pool and start ACME work thread */
 	LOG(INFO) << "Creating thread pool with " << std::to_string(workersNum+1)

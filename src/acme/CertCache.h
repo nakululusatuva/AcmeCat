@@ -85,7 +85,8 @@ public:
 		privateKeyFile << privateKey << std::endl;
 	}   // TODO: Add old cert archive feature
 	
-	void loadFromFile(const std::string& dirPath)
+	/* Try to load the certificate that cached on disk, no guarantee of success */
+	void tryLoadFromFile(const std::string& dirPath)
 	{
 		std::string certPath = dirPath+"/cert.pem";
 		std::string fullchainPath = dirPath+"/fullchain.pem";
