@@ -89,7 +89,7 @@ bool Client::request(
 	auto authorizationToken = Protocol::Socket::readSerial(fd);
 	if (authorizationToken == nullptr)
 	{
-		LOG(WARNING) << "error(s) while reading socket.";
+		LOG(WARNING) << "Can't read a valid serial from socket.";
 		Protocol::Socket::closeWithMessage(fd, Protocol::Serialize::CloseSocketSignal(""));
 		LOG(INFO) << "Disconnect to " << hostInfo;
 		return false;
@@ -135,7 +135,7 @@ bool Client::request(
 	auto encryptedCertSerial = Protocol::Socket::readSerial(fd);
 	if (encryptedCertSerial == nullptr)
 	{
-		LOG(WARNING) << "error(s) while reading socket.";
+		LOG(WARNING) << "Can't read a valid serial from socket.";
 		Protocol::Socket::closeWithMessage(fd, Protocol::Serialize::CloseSocketSignal(""));
 		LOG(INFO) << "Disconnect to " << hostInfo;
 		return false;

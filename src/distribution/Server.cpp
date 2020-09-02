@@ -70,7 +70,7 @@ void Server::handlerThread(
 	auto identityHello = Protocol::Socket::readSerial(fd);
 	if (identityHello == nullptr)
 	{
-		LOG(WARNING) << logPrefix << "error(s) while reading socket.";
+		LOG(WARNING) << logPrefix << "Can't read a valid serial from socket.";
 		Protocol::Socket::closeWithMessage(fd, Protocol::Serialize::CloseSocketSignal(""));
 		LOG(INFO) << "Disconnect to " << remoteHostInfo;
 		return;
@@ -135,7 +135,7 @@ void Server::handlerThread(
 	auto authorizationReply = Protocol::Socket::readSerial(fd);
 	if (authorizationReply == nullptr)
 	{
-		LOG(WARNING) << logPrefix << "error(s) while reading socket.";
+		LOG(WARNING) << logPrefix << "Can't read a valid serial from socket.";
 		Protocol::Socket::closeWithMessage(fd, Protocol::Serialize::CloseSocketSignal(""));
 		LOG(INFO) << "Disconnect to " << remoteHostInfo;
 		return;
