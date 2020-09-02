@@ -5,6 +5,8 @@
 #ifndef ACMED_CERTIFICATION_H
 #define ACMED_CERTIFICATION_H
 
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string>
 #include <memory>
 #include <utility>
@@ -75,22 +77,24 @@ public:
 	{
 		std::shared_lock<std::shared_mutex> readLock(mutex);
 		
-		std::ofstream certFile(dirPath + "/cert.pem");
+		tryArchiveOldCert(dirPath);
+		
+		std::ofstream certFile(dirPath + "/" + certFilename);
 		certFile << cert << std::endl << std::endl;
 		
-		std::ofstream fullchainFile(dirPath + "/fullchain.pem");
+		std::ofstream fullchainFile(dirPath + "/" + fullchainFilename);
 		fullchainFile << cert << "\n\n" << issuerCert << std::endl;
 		
-		std::ofstream privateKeyFile(dirPath + "/private.pem");
+		std::ofstream privateKeyFile(dirPath + "/" + privateKeyFilename);
 		privateKeyFile << privateKey << std::endl;
-	}   // TODO: Add old cert archive feature
+	}
 	
 	/* Try to load the certificate that cached on disk, no guarantee of success */
 	void tryLoadFromFile(const std::string& dirPath)
 	{
-		std::string certPath = dirPath+"/cert.pem";
-		std::string fullchainPath = dirPath+"/fullchain.pem";
-		std::string privatePath = dirPath+"/private.pem";
+		std::string certPath = dirPath+"/"+certFilename;
+		std::string fullchainPath = dirPath+"/"+fullchainFilename;
+		std::string privatePath = dirPath+"/"+privateKeyFilename;
 		
 		if (access(certPath.c_str(), R_OK) == 0 and access(fullchainPath.c_str(), R_OK) == 0 and access(privatePath.c_str(), R_OK) == 0)
 		{
@@ -114,6 +118,40 @@ private:
 	std::string cert;
 	std::string issuerCert;
 	std::string privateKey;
+	std::string certFilename = "cert.pem";
+	std::string fullchainFilename = "fullchain.pem";
+	std::string privateKeyFilename = "private.pem";
+	std::string archiveDirNameCommonPart = "old_cert.";
+	
+	/* MOVE the latest files to the archive dir.
+	 * Do nothing if the latest cert files not exists or errors. */
+	void tryArchiveOldCert(const std::string& dirPath)
+	{
+		if (access((dirPath+"/"+certFilename).c_str(), R_OK) == 0 and
+		    access((dirPath+"/"+fullchainFilename).c_str(), R_OK) == 0 and
+		    access((dirPath+"/"+privateKeyFilename).c_str(), R_OK) == 0)
+		{
+			auto subDirs = Utils::getSubDirsName(dirPath);
+			int biggest = -1;
+			for (const auto& dir : subDirs)
+			{
+				if (dir.find(archiveDirNameCommonPart, 0) == std::string::npos)
+					continue;
+				int suffix = 0;
+				try {
+					suffix = std::stoi(std::regex_replace(dir, std::regex(archiveDirNameCommonPart), ""));
+				} catch (std::invalid_argument& e) { return; }
+				catch (std::out_of_range& e) { return; }
+				if (suffix > biggest)
+					biggest = suffix;
+			}
+			std::string archiveDir = dirPath+"/"+archiveDirNameCommonPart+std::to_string(biggest+1);
+			mkdir(archiveDir.c_str(), S_IRWXU);
+			rename((dirPath+"/"+certFilename).c_str(), (archiveDir+"/"+certFilename).c_str());
+			rename((dirPath+"/"+fullchainFilename).c_str(), (archiveDir+"/"+fullchainFilename).c_str());
+			rename((dirPath+"/"+privateKeyFilename).c_str(), (archiveDir+"/"+privateKeyFilename).c_str());
+		}
+	}
 };
 
 
