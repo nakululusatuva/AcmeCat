@@ -517,3 +517,16 @@ int Utils::ExecuteShell(const std::string& command)
 {
 	return system((command+" 1>/dev/null 2>&1").c_str());
 }
+
+std::vector<std::string> Utils::getSubDirsName(const std::string& dir)
+{
+	const std::string dirStr = dir.back() == '/' ? dir : dir+'/';
+	std::vector<std::string> subDirs;
+	for (const auto & entry : std::filesystem::directory_iterator(dir))
+	{
+		std::string pathStr = entry.path();
+		if (entry.is_directory())
+			subDirs.push_back(std::regex_replace(pathStr, std::regex(dirStr), ""));
+	}
+	return subDirs;
+}
