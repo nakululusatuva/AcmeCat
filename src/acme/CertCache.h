@@ -118,10 +118,10 @@ private:
 	std::string cert;
 	std::string issuerCert;
 	std::string privateKey;
-	std::string certFilename = "cert.pem";
-	std::string fullchainFilename = "fullchain.pem";
-	std::string privateKeyFilename = "private.pem";
-	std::string archiveDirNameCommonPart = "old_cert.";
+	const std::string certFilename = "cert.pem";
+	const std::string fullchainFilename = "fullchain.pem";
+	const std::string privateKeyFilename = "private.pem";
+	const std::string archiveDirNameCommonPart = "old_cert.";
 	
 	/* MOVE the latest files to the archive dir.
 	 * Do nothing if the latest cert files not exists or errors. */
