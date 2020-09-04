@@ -9,22 +9,22 @@ ThreadPool::ThreadPool(size_t size)
 	for (size_t i = 0; i < size; ++i)
 	{
 		std::thread([this]
-        {
-            std::unique_lock<std::mutex> lock(this->mutex);
-            while (true)
-            {
-	            if (!tasksQueue.empty())
-	            {
-		            auto task = std::move(tasksQueue.front());
-		            tasksQueue.pop();
-		            lock.unlock();
-		            task();
-		            lock.lock();
-	            }
-	            else if (shutdown) break;
-	            else condition.wait(lock);
-            }
-        }).detach();
+		{
+			std::unique_lock<std::mutex> lock(this->mutex);
+			while (true)
+			{
+				if (!tasksQueue.empty())
+				{
+					auto task = std::move(tasksQueue.front());
+					tasksQueue.pop();
+					lock.unlock();
+					task();
+					lock.lock();
+				}
+				else if (shutdown) break;
+				else condition.wait(lock);
+			}
+		}).detach();
 	}
 }
 

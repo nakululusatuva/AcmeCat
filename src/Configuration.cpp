@@ -133,6 +133,19 @@ void Configuration::propertyServerAuthorizedkeys(const Json::Value& server)
 				auto rsa = OpensslWrap::PEM::ToRsa(key);
 				if (OpensslWrap::AsymmetricRSA::KeyBits(rsa) < MINIMUM_RSA_KEY_BITS_OF_SECURE)
 					throw ConfigurationException("value of 'server.authorized_keys', keys' size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+				
+				/* Check if exponent is 0x010001 */
+				const BIGNUM* n = nullptr;  const BIGNUM* e = nullptr;  const BIGNUM* d = nullptr;
+				RSA_get0_key(rsa.get(), &n, &e, &d);
+				auto* hexChars = BN_bn2hex(e);
+				if (memcmp(hexChars, "010001", 6) != 0)
+				{
+					free(hexChars);
+					throw ConfigurationException(
+							"value of 'server.authorized_keys', the exponent of the key must be 0x010001.");
+				}
+				free(hexChars);
+				
 				rsa.reset();
 			}
 			catch (OpensslWrap::Exceptions::PemStringToRsaFailedException& e)
@@ -174,7 +187,20 @@ void Configuration::propertyServerPrivatekey(const Json::Value& server)
 					throw ConfigurationException("value of 'server.private_key' is not a private key.");
 			}
 			if (OpensslWrap::AsymmetricRSA::KeyBits(rsa) < MINIMUM_RSA_KEY_BITS_OF_SECURE)
-				throw ConfigurationException("value of 'server.authorized_keys', keys' size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+				throw ConfigurationException("value of 'server.private_key', key's size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+			
+			/* Check if exponent is 0x010001 */
+			const BIGNUM* n = nullptr;  const BIGNUM* e = nullptr;  const BIGNUM* d = nullptr;
+			RSA_get0_key(rsa.get(), &n, &e, &d);
+			auto* hexChars = BN_bn2hex(e);
+			if (memcmp(hexChars, "010001", 6) != 0)
+			{
+				free(hexChars);
+				throw ConfigurationException(
+						"value of 'server.private_key', the exponent of the key must be 0x010001.");
+			}
+			free(hexChars);
+				
 			rsa.reset();
 		}
 		catch (OpensslWrap::Exceptions::PemStringToRsaFailedException& e)
@@ -466,7 +492,20 @@ void Configuration::propertyClientServerpublickey(const Json::Value& client)
 		{
 			std::shared_ptr<RSA> rsa = OpensslWrap::PEM::ToRsa(key);
 			if (OpensslWrap::AsymmetricRSA::KeyBits(rsa) < MINIMUM_RSA_KEY_BITS_OF_SECURE)
-				throw ConfigurationException("value of 'server.authorized_keys', keys' size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+				throw ConfigurationException("value of 'client.server_public_key', key's size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+			
+			/* Check if exponent is 0x010001 */
+			const BIGNUM* n = nullptr;  const BIGNUM* e = nullptr;  const BIGNUM* d = nullptr;
+			RSA_get0_key(rsa.get(), &n, &e, &d);
+			auto* hexChars = BN_bn2hex(e);
+			if (memcmp(hexChars, "010001", 6) != 0)
+			{
+				free(hexChars);
+				throw ConfigurationException(
+						"value of 'client.server_public_key', the exponent of the key must be 0x010001.");
+			}
+			free(hexChars);
+			
 			rsa.reset();
 		}
 		catch (OpensslWrap::Exceptions::PemStringToRsaFailedException& e)
@@ -509,7 +548,20 @@ void Configuration::propertyClientPrivatekey(const Json::Value& client)
 					throw ConfigurationException("value of 'client.private_key' is not a private key.");
 			}
 			if (OpensslWrap::AsymmetricRSA::KeyBits(rsa) < MINIMUM_RSA_KEY_BITS_OF_SECURE)
-				throw ConfigurationException("value of 'server.authorized_keys', keys' size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+				throw ConfigurationException("value of 'client.private_key', key's size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+			
+			/* Check if exponent is 0x010001 */
+			const BIGNUM* n = nullptr;  const BIGNUM* e = nullptr;  const BIGNUM* d = nullptr;
+			RSA_get0_key(rsa.get(), &n, &e, &d);
+			auto* hexChars = BN_bn2hex(e);
+			if (memcmp(hexChars, "010001", 6) != 0)
+			{
+				free(hexChars);
+				throw ConfigurationException(
+						"value of 'client.private_key', exponent of the key must be 0x010001.");
+			}
+			free(hexChars);
+			
 			rsa.reset();
 		}
 		catch (OpensslWrap::Exceptions::PemStringToRsaFailedException& e)

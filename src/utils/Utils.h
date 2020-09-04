@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <chrono>
 #include <regex>
-#include <stdlib.h>
+#include <filesystem>
 #include "jsoncpp/include/json/json.h"
 
 namespace Utils
@@ -21,6 +21,7 @@ namespace Utils
 	
 	bool EmailIsValid(const std::string& email);
 	int ExecuteShell(const std::string& command);
+	std::vector<std::string> getSubDirsName(const std::string& dir);
 	
 	/* 1 - Struct types in openssl such as RSA(rsa_st) contain pointers that point to another heap memory
 	 * and have their own delete function like RSA_free(RSA* ptr).
