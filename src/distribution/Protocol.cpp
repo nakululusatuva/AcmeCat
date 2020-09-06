@@ -293,7 +293,7 @@ int Protocol::Socket::openListener(int port)
 	addr.sin6_addr = in6addr_any;
 	if (bind(sd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
 		return SOCKET_CANNOT_BIND_PORT;
-	if (listen(sd, 10) != 0)
+	if (listen(sd, SOMAXCONN) != 0)
 		return SOCKET_CANNOT_LISTENING;
 	return sd;
 }
