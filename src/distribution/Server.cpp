@@ -55,12 +55,27 @@ void Server::acmeThread(const std::shared_ptr<CertCache>& cert, const Json::Valu
 }
 
 void Server::handlerThread(
-		const std::shared_ptr<CertCache>& cert,
-		int fd, struct sockaddr_in addr,
+		const std::shared_ptr<CertCache>& cert, int fd,
 		const std::shared_ptr<RSA>& serverPrivateKey,
 		OpensslWrap::AsymmetricRSA::PublicKeyList authorizedKeys)
 {
-	std::string remoteHostInfo = std::string("[") +  inet_ntoa(addr.sin_addr) + "]:" + std::to_string(ntohs(addr.sin_port));
+	/* Get client's ip address and port */
+	struct sockaddr_in6 clientSA;
+	char addrString[INET6_ADDRSTRLEN];
+	socklen_t saLen = sizeof(clientSA);
+	getpeername(fd, (struct sockaddr*)&clientSA, &saLen);
+	const std::string v4padding = "::ffff:";
+	std::string address = inet_ntop(AF_INET6, &(clientSA.sin6_addr), addrString, INET6_ADDRSTRLEN);
+	bool isPaddedIPV4 = std::regex_match(address, std::regex(R"(::ffff:(\d+\.\d+\.\d+\.\d+)$)"));
+	if (isPaddedIPV4)
+		// Accept incoming IPv4 connections on an IPv6 socket. Reformat the padded ipv4 address, example: '::ffff:127.0.0.1' to '127.0.0.1'
+		address = address.substr(v4padding.size(), address.size()-v4padding.size());
+	else
+		address = "[" + address + "]";
+	std::string port = std::to_string(ntohs(clientSA.sin6_port));
+	std::string remoteHostInfo = address + ":" + port;
+	
+	/* Log remote host's info */
 	std::string logPrefix = "Connection " + remoteHostInfo + ", ";
 	LOG(INFO) << "Incoming connection from " << remoteHostInfo;
 	
@@ -228,6 +243,6 @@ void Server::run()
 		struct sockaddr_in addr;
 		socklen_t len = sizeof(addr);
 		int fd = accept(listener, (struct sockaddr*)&addr, &len);
-		pool.execute(handlerThread, cert, fd, addr, serverPrivateKey, authorizedKeys);
+		pool.execute(handlerThread, cert, fd, serverPrivateKey, authorizedKeys);
 	}
 }

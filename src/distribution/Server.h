@@ -25,7 +25,7 @@ private:
 	Json::Value globalConfigs;
 	bool issueImmediately;
 	static void acmeThread(const std::shared_ptr<CertCache>& cert, const Json::Value& globalConfigs, bool immediately);
-	static void handlerThread(const std::shared_ptr<CertCache>& cert, int fd, struct sockaddr_in addr, const std::shared_ptr<RSA>& serverPrivateKey, OpensslWrap::AsymmetricRSA::PublicKeyList authorizedKeys);
+	static void handlerThread(const std::shared_ptr<CertCache>& cert, int fd, const std::shared_ptr<RSA>& serverPrivateKey, OpensslWrap::AsymmetricRSA::PublicKeyList authorizedKeys);
 };
 
 class ServerFatalException : std::exception
