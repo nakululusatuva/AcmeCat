@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/acmecat -m server -c /etc/acmecat/config_server.json --secure
+ExecStart=/usr/bin/acmecat -m server -c /etc/acmecat/config_server.json
 
 [Install]
 WantedBy=multi-user.target
