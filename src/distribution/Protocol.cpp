@@ -241,7 +241,7 @@ std::shared_ptr<std::vector<std::byte>> Protocol::Socket::readSerial(int fd)
 	if (buffer == nullptr)
 		return nullptr;
 	
-	readLen = read(fd, buffer, 4);
+	readLen = recv(fd, buffer, 4, MSG_WAITALL);
 	if (readLen != 4)
 		return nullptr;
 	
@@ -254,7 +254,7 @@ std::shared_ptr<std::vector<std::byte>> Protocol::Socket::readSerial(int fd)
 		return nullptr;
 	}
 	buffer = tmp;
-	readLen = read(fd, buffer+4, followingLen);
+	readLen = recv(fd, buffer+4, followingLen, MSG_WAITALL);
 	if (readLen != followingLen)
 	{
 		free(buffer);
@@ -271,13 +271,13 @@ std::shared_ptr<std::vector<std::byte>> Protocol::Socket::readSerial(int fd)
 
 void Protocol::Socket::writeSerial(int fd, const std::shared_ptr<const std::vector<std::byte>>& serial)
 {
-	write(fd, serial->data(), serial->size());
+	send(fd, serial->data(), serial->size(), 0);
 }
 
 void Protocol::Socket::closeWithMessage(int fd, const std::shared_ptr<const std::vector<std::byte>>& signal)
 {
 	if (signal != nullptr)
-		write(fd, signal->data(), signal->size());
+		send(fd, signal->data(), signal->size(), 0);
 	close(fd);
 }
 
