@@ -50,7 +50,7 @@ void Client::run()
 		if (request(hostname, port, cache, clientFingerprint, serverPublicKey, clientPrivateKey))
 		{
 			cache.toFile(certSaveDir);
-			LOG(INFO) << "New Certificate was saved under " << certSaveDir << ".";
+			LOG(INFO) << "New certificate was saved under " << certSaveDir << ".";
 			if (!shellCommand.empty())
 			{
 				LOG(INFO) << "Execute shell command \"" << shellCommand << "\"";
