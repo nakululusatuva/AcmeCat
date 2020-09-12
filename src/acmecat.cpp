@@ -29,8 +29,7 @@ int main(int argc, char* argv[])
 		exit(OPTIONS_INVALID);
 	}
 	auto[mode, secure, issueImmediately, configFilePath] = result;
-
-#ifdef NDEBUG   // If building release
+	
 	if (secure)
 	{   /* Check root privilege */
 		if (getuid() != 0)
@@ -45,7 +44,6 @@ int main(int argc, char* argv[])
 			exit(MLOCKALL_FAILED);
 		}
 	}
-#endif
 	
 	/* Get configurations */
 	Json::Value globalConfigs;
