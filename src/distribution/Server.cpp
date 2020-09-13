@@ -80,6 +80,7 @@ void Server::handlerThread(
 	LOG(INFO) << "Incoming connection from " << remoteHostInfo;
 	
 	/* Decrypt client hello and get identity */
+	std::string nickName;
 	std::shared_ptr<RSA> clientPublicKey = nullptr;
 	LOG(INFO) << logPrefix << "receiving client's identity hello.";
 	auto identityHello = Protocol::Socket::readSerial(fd);
@@ -127,7 +128,8 @@ void Server::handlerThread(
 			LOG(INFO) << "Disconnect to " << remoteHostInfo;
 			return;
 		}
-		clientPublicKey = authorizedKeys.get(fingerprint);
+		auto [name, key] = authorizedKeys.get(fingerprint);
+		nickName = name; clientPublicKey = key;
 		if (clientPublicKey == nullptr)
 		{
 			std::string msg = "client's public key fingerprint not authorized";
@@ -136,14 +138,17 @@ void Server::handlerThread(
 			LOG(INFO) << "Disconnect to " << remoteHostInfo;
 			return;
 		}
-		else LOG(INFO) << logPrefix << "fingerprint: " << fingerprint << " is authorized";
+		else
+		{
+			LOG(INFO) << logPrefix << "client's public key is in the authorized list, nickname is '" << nickName << "'.";
+		}
 	}
 	
 	/* Send a token that encrypted with client's public key */
 	auto authorizationToken = Protocol::RandomToken(32);
 	auto encryptedToken = Protocol::Serialize::AuthorizeToken(authorizationToken, clientPublicKey);
 	Protocol::Socket::writeSerial(fd, encryptedToken);
-	LOG(INFO) << logPrefix << "authorization token: " << authorizationToken << " was sent.";
+	LOG(INFO) << logPrefix << "authorization token " << authorizationToken << " was sent.";
 	
 	/* Receive decrypted result from client, compare to generated token */
 	LOG(INFO) << logPrefix << "receiving client's authorization reply.";
@@ -211,10 +216,10 @@ void Server::run()
 	else serverPrivateKey = OpensslWrap::PEM::ToRsa(privateKeyPEM);
 	
 	/* Get authorized keys */
-	std::vector<std::string> pemStrings;
-	for (const auto& pem : globalConfigs["server"]["authorized_keys"])
-		pemStrings.push_back(pem.asString());
-	auto authorizedKeys = OpensslWrap::AsymmetricRSA::PublicKeyList(pemStrings);
+	std::vector<std::tuple<std::string, std::string>> list;
+	for (const auto& nameAndPem : globalConfigs["server"]["authorized_keys"])
+		list.emplace_back(std::tuple<std::string, std::string>(nameAndPem["name"].asString(), nameAndPem["key"].asString()));
+	auto authorizedKeys = OpensslWrap::AsymmetricRSA::PublicKeyList(list);
 	
 	/* port, thread num, cron expression, cert cache */
 	int port = globalConfigs["server"]["port"].asInt();

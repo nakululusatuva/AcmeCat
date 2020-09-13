@@ -119,10 +119,15 @@ void Configuration::propertyServerAuthorizedkeys(const Json::Value& server)
 	
 	else
 	{
-		for (const auto& k : server["authorized_keys"])
+		for (const auto& nameAndPem : server["authorized_keys"])
 		{
+			if (nameAndPem["name"].isNull())
+				throw ConfigurationException("value of 'server.authorized_keys', property 'name' should not be empty.");
+			else if (!nameAndPem["name"].isString())
+				throw ConfigurationException("value of 'server.authorized_keys', property 'name' must be a string.");
+			
 			/* Cast stringify "\n" to control character '\n' */
-			auto key = std::regex_replace(k.asString(), std::regex("\\n"), "\n");
+			auto key = std::regex_replace(nameAndPem["key"].asString(), std::regex("\\n"), "\n");
 			
 			if (!OpensslWrap::PEM::IsPublicKey(key))    /* Check if a public key */
 				throw ConfigurationException(

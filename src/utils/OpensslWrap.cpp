@@ -314,15 +314,15 @@ std::string OpensslWrap::AsymmetricRSA::PrivateKeyToPKCS1(const std::shared_ptr<
 	}
 }
 
-OpensslWrap::AsymmetricRSA::PublicKeyList::PublicKeyList(const std::vector<std::string>& pemStrings)
+OpensslWrap::AsymmetricRSA::PublicKeyList::PublicKeyList(const std::vector<std::tuple<std::string, std::string>>& nameAndPem)
 {
-	for (const auto& key : pemStrings)
+	for (const auto& [name, pem] : nameAndPem)
 	{
 		try
 		{
-			std::shared_ptr<RSA> rsa = OpensslWrap::PEM::ToRsa(key);    /* Get RSA from pem string */
+			auto rsa = OpensslWrap::PEM::ToRsa(pem);
 			std::string fingerprint = OpensslWrap::AsymmetricRSA::FingerprintSHA256(rsa);
-			fingerprintRsaPairs[fingerprint] = rsa;
+			list[fingerprint] = std::tuple<std::string, std::shared_ptr<RSA>>(name, rsa);
 		}
 		catch (Exceptions::PemStringToRsaFailedException& e)
 		{
@@ -331,17 +331,17 @@ OpensslWrap::AsymmetricRSA::PublicKeyList::PublicKeyList(const std::vector<std::
 	}
 }
 
-std::shared_ptr<RSA> OpensslWrap::AsymmetricRSA::PublicKeyList::get(const std::string& SHA256fingerprint)
+std::tuple<std::string, std::shared_ptr<RSA>> OpensslWrap::AsymmetricRSA::PublicKeyList::get(const std::string& SHA256fingerprint)
 {
-	auto notFound = fingerprintRsaPairs.end();
-	auto pair = fingerprintRsaPairs.find(SHA256fingerprint);
-	if (pair != notFound)
+	auto notFound = list.end();
+	auto nameAndKey = list.find(SHA256fingerprint);
+	if (nameAndKey != notFound)
 	{
-		auto dup = DumpPublicKey(pair->second);
-		return dup;
+		auto [name, rsa] = nameAndKey->second;
+		return std::tuple<std::string, std::shared_ptr<RSA>>(name, DumpPublicKey(rsa));
 	}
 	else
-		return nullptr;
+		return std::tuple<std::string, std::shared_ptr<RSA>>("", nullptr);
 }
 
 std::string OpensslWrap::AsymmetricRSA::FingerprintMD5(const std::shared_ptr<const RSA>& rsa)

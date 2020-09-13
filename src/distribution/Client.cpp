@@ -81,7 +81,7 @@ bool Client::request(
 	/* Send identity hello */
 	auto identityHello = Protocol::Serialize::ClientIdentity(clientFingerprint, serverPublicKey);
 	Protocol::Socket::writeSerial(fd, identityHello);
-	LOG(INFO) << "Sent public key fingerprint: " << clientFingerprint;
+	LOG(INFO) << "Sent client's public key fingerprint.";
 	
 	/* Receive authorization token and decrypt */
 	std::string token;
