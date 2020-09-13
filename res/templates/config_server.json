@@ -8,11 +8,11 @@
 		"authorized_keys": [
 			{
 				"name": "Alice",
-				"key": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8p1bZsO/jSrhyzNQcMPE\nEXAMPLE\noJa8vYTfcHbaxXaxBeYrQuECAwEAAQ==\n-----END PUBLIC KEY-----"
+				"public_key": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8p1bZsO/jSrhyzNQcMPE\nEXAMPLE\noJa8vYTfcHbaxXaxBeYrQuECAwEAAQ==\n-----END PUBLIC KEY-----"
 			},
 			{
 				"name": "Bob",
-				"key": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8p1bZsO/jSrhyzNQcMPE\nEXAMPLE\noJa8vYTfcHbaxXaxBeYrQuECAwEAAQ==\n-----END PUBLIC KEY-----"
+				"public_key": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA8p1bZsO/jSrhyzNQcMPE\nEXAMPLE\noJa8vYTfcHbaxXaxBeYrQuECAwEAAQ==\n-----END PUBLIC KEY-----"
 			}
 		],
 		"private_key": "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIFLTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQIcDfuZbKaoVQCAggA\nEXAMPLE\nI7ArlWSrIj5RbH6a38Xc8Kq3k3WmhoHAgllVZ1+NH8c4\n-----END ENCRYPTED PRIVATE KEY-----",
