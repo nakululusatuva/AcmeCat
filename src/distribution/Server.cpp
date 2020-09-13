@@ -218,7 +218,7 @@ void Server::run()
 	/* Get authorized keys */
 	std::vector<std::tuple<std::string, std::string>> list;
 	for (const auto& nameAndPem : globalConfigs["server"]["authorized_keys"])
-		list.emplace_back(std::tuple<std::string, std::string>(nameAndPem["name"].asString(), nameAndPem["key"].asString()));
+		list.emplace_back(std::tuple<std::string, std::string>(nameAndPem["name"].asString(), nameAndPem["public_key"].asString()));
 	auto authorizedKeys = OpensslWrap::AsymmetricRSA::PublicKeyList(list);
 	
 	/* port, thread num, cron expression, cert cache */
