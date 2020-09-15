@@ -79,6 +79,9 @@ public:
 		
 		tryArchiveOldCert(dirPath);
 		
+		if (access(dirPath.c_str(), W_OK) != 0)
+			return;
+		
 		std::ofstream certFile(dirPath + "/" + certFilename);
 		certFile << cert << std::endl << std::endl;
 		
@@ -127,7 +130,8 @@ private:
 	 * Do nothing if the latest cert files not exists or errors. */
 	void tryArchiveOldCert(const std::string& dirPath)
 	{
-		if (access((dirPath+"/"+certFilename).c_str(), R_OK) == 0 and
+		if (access(dirPath.c_str(), W_OK) == 0 and
+			access((dirPath+"/"+certFilename).c_str(), R_OK) == 0 and
 		    access((dirPath+"/"+fullchainFilename).c_str(), R_OK) == 0 and
 		    access((dirPath+"/"+privateKeyFilename).c_str(), R_OK) == 0)
 		{
