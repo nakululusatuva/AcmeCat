@@ -49,8 +49,18 @@ void Client::run()
 		
 		if (request(hostname, port, cache, clientFingerprint, serverPublicKey, clientPrivateKey))
 		{
-			cache.toFile(certSaveDir);
-			LOG(INFO) << "New certificate was saved under " << certSaveDir << ".";
+			auto ret = cache.toFile(certSaveDir);
+			switch (ret)
+			{
+				case CertCache::IO_ERROR:
+					LOG(WARNING) << "IO error while saving certificate to " << certSaveDir << ".";
+				case CertCache::NO_READ_PRIVILEGE:
+					LOG(WARNING) << "No reading privilege to save the certificate to" << certSaveDir << ".";
+				case CertCache::NO_WRITE_PRIVILEGE:
+					LOG(WARNING) << "No writing privilege to save the certificate to" << certSaveDir << ".";
+				default:
+					LOG(INFO) << "New certificate was saved under " << certSaveDir << ".";
+			}
 			if (!shellCommand.empty())
 			{
 				LOG(INFO) << "Execute shell command \"" << shellCommand << "\"";

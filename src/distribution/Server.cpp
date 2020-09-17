@@ -35,9 +35,22 @@ void Server::acmeThread(const std::shared_ptr<CertCache>& cert, const Json::Valu
 			certsAndPrivateKey = acme.issueCertificate();
 			
 			auto[endEntityCertPEM, issuerCertPEM, privateKeyPKCS8] = certsAndPrivateKey;
-			LOG(INFO) << "ACME - Caching the new certificate in memory.";
 			cert->update(endEntityCertPEM, issuerCertPEM, privateKeyPKCS8);
-			cert->toFile(saveDir);
+			LOG(INFO) << "ACME - New certificate was cached in memory.";
+			
+			auto ret = cert->toFile(saveDir);
+			switch (ret)
+			{
+				case CertCache::IO_ERROR:
+					LOG(WARNING) << "ACME - IO Error while saving the certificate to " << saveDir << ".";
+				case CertCache::NO_READ_PRIVILEGE:
+					LOG(WARNING) << "ACME - No reading privilege to save the certificate to" << saveDir << ".";
+				case CertCache::NO_WRITE_PRIVILEGE:
+					LOG(WARNING) << "ACME - No write privilege to save the certificate to" << saveDir << ".";
+				default:
+					LOG(INFO) << "ACME - New certificate was saved under " << saveDir << ".";
+			}
+			
 			if (!shellCommand.empty())
 			{
 				LOG(INFO) << "ACME - Execute shell command \"" << shellCommand << "\"";
@@ -225,8 +238,19 @@ void Server::run()
 	int port = globalConfigs["server"]["port"].asInt();
 	int workersNum = globalConfigs["server"]["workers"].asInt();
 	std::string cronExpression = globalConfigs["server"]["acme"]["cron_expression"].asString();
+	std::string certSaveDir = globalConfigs["server"]["acme"]["save_dir"].asString();
 	auto cert = std::make_shared<CertCache>();
-	cert->tryLoadFromFile(globalConfigs["server"]["acme"]["save_dir"].asString()); // Try to load the cached cert from disk
+	LOG(INFO) << "Loading the current certificate from " << certSaveDir;
+	auto loadRet = cert->tryLoadFromFile(certSaveDir);
+	switch (loadRet)
+	{
+		case CertCache::IO_ERROR:
+			LOG(WARNING) << "IO error while loading the certificate.";
+		case CertCache::NO_READ_PRIVILEGE:
+			LOG(WARNING) << "Certificate does not exist yet or no reading privilege.";
+		default:
+			break;
+	}
 	
 	/* Create thread pool and start ACME work thread */
 	LOG(INFO) << "Creating thread pool with " << std::to_string(workersNum+1)
