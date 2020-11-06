@@ -108,15 +108,8 @@ void Configuration::propertyServerWorkers(const Json::Value& server)
 
 void Configuration::propertyServerAuthorizedkeys(const Json::Value& server)
 {
-	if (server["authorized_keys"].isNull())
-		throw ConfigurationException("property 'server.authorized_keys' not found.");
-	
-	else if (!server["authorized_keys"].isArray())
+	if (!server["authorized_keys"].isNull() and !server["authorized_keys"].isArray())
 		throw ConfigurationException("value of 'server.authorized_keys' must be an array.");
-	
-	else if (server["authorized_keys"].empty())
-		throw ConfigurationException("value of 'server.authorized_keys', array cannot be empty.");
-	
 	else
 	{
 		for (const auto& nameAndPem : server["authorized_keys"])
