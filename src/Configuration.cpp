@@ -108,54 +108,57 @@ void Configuration::propertyServerWorkers(const Json::Value& server)
 
 void Configuration::propertyServerAuthorizedkeys(const Json::Value& server)
 {
-	if (!server["authorized_keys"].isNull() and !server["authorized_keys"].isArray())
-		throw ConfigurationException("value of 'server.authorized_keys' must be an array.");
-	else
+	if (!server["authorized_keys"].isNull())
 	{
-		for (const auto& nameAndPem : server["authorized_keys"])
-		{
-			if (nameAndPem["name"].isNull())
-				throw ConfigurationException("value of 'server.authorized_keys', property 'name' should not be empty.");
-			else if (!nameAndPem["name"].isString())
-				throw ConfigurationException("value of 'server.authorized_keys', property 'name' must be a string.");
-			
-			/* Cast stringify "\n" to control character '\n' */
-			auto key = std::regex_replace(nameAndPem["public_key"].asString(), std::regex("\\n"), "\n");
-			
-			if (!OpensslWrap::PEM::IsPublicKey(key))    /* Check if a public key */
-				throw ConfigurationException(
-						"property 'server.authorized_keys' contains key(s) which is not a public key.");
-				
-			try    /* Check if the key is a valid rsa key */
-			{
-				auto rsa = OpensslWrap::PEM::ToRsa(key);
-				if (OpensslWrap::AsymmetricRSA::KeyBits(rsa) < MINIMUM_RSA_KEY_BITS_OF_SECURE)
-					throw ConfigurationException("value of 'server.authorized_keys', keys' size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
-				
-				/* Check if exponent is 0x010001 */
-				const BIGNUM* n = nullptr;  const BIGNUM* e = nullptr;  const BIGNUM* d = nullptr;
-				RSA_get0_key(rsa.get(), &n, &e, &d);
-				auto* hexChars = BN_bn2hex(e);
-				if (memcmp(hexChars, "010001", 6) != 0)
-				{
-					free(hexChars);
-					throw ConfigurationException(
-							"value of 'server.authorized_keys', the exponent of the key must be 0x010001.");
-				}
-				free(hexChars);
-				
-				rsa.reset();
-			}
-			catch (OpensslWrap::Exceptions::PemStringToRsaFailedException& e)
-			{
-				throw ConfigurationException("property 'server.authorized_keys' contains invalid PEM format key.");
-			}
-			catch (OpensslWrap::Exceptions::NotRSAKeyException& e)
-			{
-				throw ConfigurationException("property 'server.authorized_keys' contains non-RSA key.");
-			}
-		}
-	}
+        if (!server["authorized_keys"].isArray())
+            throw ConfigurationException("value of 'server.authorized_keys' must be an array.");
+        else
+        {
+            for (const auto& nameAndPem : server["authorized_keys"])
+            {
+                if (nameAndPem["name"].isNull())
+                    throw ConfigurationException("value of 'server.authorized_keys', property 'name' should not be empty.");
+                else if (!nameAndPem["name"].isString())
+                    throw ConfigurationException("value of 'server.authorized_keys', property 'name' must be a string.");
+
+                /* Cast stringify "\n" to control character '\n' */
+                auto key = std::regex_replace(nameAndPem["public_key"].asString(), std::regex("\\n"), "\n");
+
+                if (!OpensslWrap::PEM::IsPublicKey(key))    /* Check if a public key */
+                    throw ConfigurationException(
+                            "property 'server.authorized_keys' contains key(s) which is not a public key.");
+
+                try    /* Check if the key is a valid rsa key */
+                {
+                    auto rsa = OpensslWrap::PEM::ToRsa(key);
+                    if (OpensslWrap::AsymmetricRSA::KeyBits(rsa) < MINIMUM_RSA_KEY_BITS_OF_SECURE)
+                        throw ConfigurationException("value of 'server.authorized_keys', keys' size should be at least " + std::to_string(MINIMUM_RSA_KEY_BITS_OF_SECURE) + " bits.");
+
+                    /* Check if exponent is 0x010001 */
+                    const BIGNUM* n = nullptr;  const BIGNUM* e = nullptr;  const BIGNUM* d = nullptr;
+                    RSA_get0_key(rsa.get(), &n, &e, &d);
+                    auto* hexChars = BN_bn2hex(e);
+                    if (memcmp(hexChars, "010001", 6) != 0)
+                    {
+                        free(hexChars);
+                        throw ConfigurationException(
+                                "value of 'server.authorized_keys', the exponent of the key must be 0x010001.");
+                    }
+                    free(hexChars);
+
+                    rsa.reset();
+                }
+                catch (OpensslWrap::Exceptions::PemStringToRsaFailedException& e)
+                {
+                    throw ConfigurationException("property 'server.authorized_keys' contains invalid PEM format key.");
+                }
+                catch (OpensslWrap::Exceptions::NotRSAKeyException& e)
+                {
+                    throw ConfigurationException("property 'server.authorized_keys' contains non-RSA key.");
+                }
+            }
+        }
+    }
 }
 
 void Configuration::propertyServerPrivatekey(const Json::Value& server)
