@@ -42,11 +42,14 @@ void Server::acmeThread(const std::shared_ptr<CertCache>& cert, const Json::Valu
 			switch (ret)
 			{
 				case CertCache::IO_ERROR:
-					LOG(WARNING) << "ACME - IO Error while saving the certificate to " << saveDir << ".";
-				case CertCache::NO_READ_PRIVILEGE:
-					LOG(WARNING) << "ACME - No reading privilege to save the certificate to" << saveDir << ".";
-				case CertCache::NO_WRITE_PRIVILEGE:
-					LOG(WARNING) << "ACME - No write privilege to save the certificate to" << saveDir << ".";
+					LOG(ERROR) << "ACME - IO Error while saving the certificate to " << saveDir << ".";
+					break;
+                case CertCache::NO_WRITE_PRIVILEGE:
+                    LOG(ERROR) << "ACME - No write privilege to save the certificate to " << saveDir << ".";
+                    break;
+				case CertCache::FAILED_TO_ARCHIVE_OLD_CERT:
+					LOG(ERROR) << "ACME - Failed to archive the old certificate.";
+					break;
 				default:
 					LOG(INFO) << "ACME - New certificate was saved under " << saveDir << ".";
 			}

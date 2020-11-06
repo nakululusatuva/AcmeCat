@@ -22,6 +22,7 @@ public:
 	static const int NO_READ_PRIVILEGE = -1;
 	static const int NO_WRITE_PRIVILEGE = -2;
 	static const int IO_ERROR = -3;
+    static const int FAILED_TO_ARCHIVE_OLD_CERT = -4;
 	CertCache()
 	{
 		cached = false;
@@ -76,7 +77,7 @@ public:
 		return jsonObject;
 	}
 	
-	/* Returns: IO_ERROR, NO_READ_PRIVILEGE, NO_WRITE_PRIVILEGE */
+	/* Returns: IO_ERROR, FAILED_TO_ARCHIVE_OLD_CERT, NO_WRITE_PRIVILEGE */
 	int toFile(const std::string& dirPath)
 	{
 		std::shared_lock<std::shared_mutex> readLock(mutex);
@@ -87,7 +88,7 @@ public:
 		{
 			auto archiveRet = tryArchiveOldCert(dirPath);
 			if (archiveRet != 0)
-				return archiveRet;
+				return FAILED_TO_ARCHIVE_OLD_CERT;
 			
 			std::ofstream certFile(dirPath + "/" + certFilename);
 			certFile << cert << std::endl << std::endl;
@@ -152,9 +153,15 @@ private:
 	{
 		if (access(dirPath.c_str(), W_OK) != 0)
 			return NO_WRITE_PRIVILEGE;
-		else if (access((dirPath+"/"+certFilename).c_str(), R_OK) == 0 and
-			access((dirPath+"/"+fullchainFilename).c_str(), R_OK) == 0 and
-		    access((dirPath+"/"+privateKeyFilename).c_str(), R_OK) == 0)
+		else if (access((dirPath+"/"+certFilename).c_str(), F_OK) != 0 or
+		         access((dirPath+"/"+fullchainFilename).c_str(), F_OK) != 0 or
+		         access((dirPath+"/"+privateKeyFilename).c_str(), F_OK) != 0)
+		    return 0;
+		else if (access((dirPath+"/"+certFilename).c_str(), R_OK) != 0 or
+		         access((dirPath+"/"+fullchainFilename).c_str(), R_OK) != 0 or
+		         access((dirPath+"/"+privateKeyFilename).c_str(), R_OK) != 0)
+		    return NO_READ_PRIVILEGE;
+		else
 		{
 			try
 			{
@@ -189,7 +196,6 @@ private:
 			}
 			catch (...) { return IO_ERROR; }
 		}
-		else return NO_READ_PRIVILEGE;
 	}
 };
 
