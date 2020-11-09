@@ -88,7 +88,6 @@ Acme::API::API(const Json::Value& globalConfigs)
 			{"Host", uri},
 			{"Content-Type", "application/jose+json"}
 		};
-		directory();
 	}
 }
 
@@ -594,8 +593,9 @@ std::string Acme::API::downloadCertificate(const std::string& accountIDPath, con
 
 std::tuple<std::string, std::string, std::string> Acme::API::issueCertificate()
 {
-#define MAX_ATTEMPT_NUMBER 5
-#define AWAITING_SECONDS 5
+	const int MAX_ATTEMPT_NUMBER = 5;
+	const int AWAITING_SECONDS = 5;
+	
 	int attempts = 0;
 	std::string fullchainPEM;
 	std::shared_ptr<RSA> certPrivateKey = nullptr;

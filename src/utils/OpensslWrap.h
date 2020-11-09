@@ -97,12 +97,12 @@ namespace OpensslWrap
 		{
 		public:
 			/* Exceptions: Exceptions::PemStringToRsaFailedException() */
-			explicit PublicKeyList(const std::vector<std::string>& pemStrings);
+			explicit PublicKeyList(const std::vector<std::tuple<std::string, std::string>>& nameAndPem);
 			~PublicKeyList()= default;
-			std::shared_ptr<RSA> get(const std::string& SHA256fingerprint);
+			std::tuple<std::string, std::shared_ptr<RSA>> get(const std::string& SHA256fingerprint);
 		
 		private:
-			std::map<std::string, std::shared_ptr<RSA>> fingerprintRsaPairs;    /* <Fingerprint, RSA> */
+			std::map<std::string, std::tuple<std::string, std::shared_ptr<RSA>>> list;    /* <Fingerprint, <NickName, RSA>> */
 		};
 	} // End of namespace AsymmetricRSA
 	

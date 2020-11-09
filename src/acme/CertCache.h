@@ -19,6 +19,10 @@
 class CertCache     /* Thread safe */
 {
 public:
+	static const int NO_READ_PRIVILEGE = -1;
+	static const int NO_WRITE_PRIVILEGE = -2;
+	static const int IO_ERROR = -3;
+    static const int FAILED_TO_ARCHIVE_OLD_CERT = -4;
 	CertCache()
 	{
 		cached = false;
@@ -73,24 +77,36 @@ public:
 		return jsonObject;
 	}
 	
-	void toFile(const std::string& dirPath)
+	/* Returns: IO_ERROR, FAILED_TO_ARCHIVE_OLD_CERT, NO_WRITE_PRIVILEGE */
+	int toFile(const std::string& dirPath)
 	{
 		std::shared_lock<std::shared_mutex> readLock(mutex);
 		
-		tryArchiveOldCert(dirPath);
-		
-		std::ofstream certFile(dirPath + "/" + certFilename);
-		certFile << cert << std::endl << std::endl;
-		
-		std::ofstream fullchainFile(dirPath + "/" + fullchainFilename);
-		fullchainFile << cert << "\n\n" << issuerCert << std::endl;
-		
-		std::ofstream privateKeyFile(dirPath + "/" + privateKeyFilename);
-		privateKeyFile << privateKey << std::endl;
+		if (access(dirPath.c_str(), W_OK) != 0)
+			return NO_WRITE_PRIVILEGE;
+		try
+		{
+			auto archiveRet = tryArchiveOldCert(dirPath);
+			if (archiveRet != 0)
+				return FAILED_TO_ARCHIVE_OLD_CERT;
+			
+			std::ofstream certFile(dirPath + "/" + certFilename);
+			certFile << cert << std::endl << std::endl;
+			
+			std::ofstream fullchainFile(dirPath + "/" + fullchainFilename);
+			fullchainFile << cert << "\n" << issuerCert << std::endl;
+			
+			std::ofstream privateKeyFile(dirPath + "/" + privateKeyFilename);
+			privateKeyFile << privateKey << std::endl;
+			
+			return 0;
+		}
+		catch (...) { return IO_ERROR; }
 	}
 	
-	/* Try to load the certificate that cached on disk, no guarantee of success */
-	void tryLoadFromFile(const std::string& dirPath)
+	/* Try to load the certificate that cached on disk, no guarantee of success
+	 * Returns: IO_ERROR, NO_READ_PRIVILEGE */
+	int tryLoadFromFile(const std::string& dirPath)
 	{
 		std::string certPath = dirPath+"/"+certFilename;
 		std::string fullchainPath = dirPath+"/"+fullchainFilename;
@@ -98,18 +114,26 @@ public:
 		
 		if (access(certPath.c_str(), R_OK) == 0 and access(fullchainPath.c_str(), R_OK) == 0 and access(privatePath.c_str(), R_OK) == 0)
 		{
-			std::ifstream certFile(certPath), fullchainFile(fullchainPath), privateFile(privatePath);
-			
-			std::string certBuffer((std::istreambuf_iterator<char>(certFile)), std::istreambuf_iterator<char>());
-			std::string fullchainBuffer((std::istreambuf_iterator<char>(fullchainFile)), std::istreambuf_iterator<char>());
-			std::string privateBuffer((std::istreambuf_iterator<char>(privateFile)), std::istreambuf_iterator<char>());
-			
-			std::unique_lock<std::shared_mutex> writeLock(mutex);
-			cert = certBuffer;
-			issuerCert = Utils::StringProcess::SplitString(fullchainBuffer, "\n\n").at(1);
-			privateKey = privateBuffer;
-			cached = true;
+			try
+			{
+				std::ifstream certFile(certPath), fullchainFile(fullchainPath), privateFile(privatePath);
+				
+				std::string certBuffer((std::istreambuf_iterator<char>(certFile)), std::istreambuf_iterator<char>());
+				std::string fullchainBuffer((std::istreambuf_iterator<char>(fullchainFile)),
+				                            std::istreambuf_iterator<char>());
+				std::string privateBuffer((std::istreambuf_iterator<char>(privateFile)),
+				                          std::istreambuf_iterator<char>());
+				
+				std::unique_lock<std::shared_mutex> writeLock(mutex);
+				cert = certBuffer;
+				issuerCert = Utils::StringProcess::SplitString(fullchainBuffer, "\n\n").at(1);
+				privateKey = privateBuffer;
+				cached = true;
+				return 0;
+			}
+			catch (...) { return IO_ERROR; }
 		}
+		else return NO_READ_PRIVILEGE;
 	}
 	
 private:
@@ -124,32 +148,53 @@ private:
 	const std::string archiveDirNameCommonPart = "old_cert.";
 	
 	/* MOVE the latest files to the archive dir.
-	 * Do nothing if the latest cert files not exists or errors. */
-	void tryArchiveOldCert(const std::string& dirPath)
+	 * Returns: IO_ERROR, NO_READ_PRIVILEGE, NO_WRITE_PRIVILEGE */
+	int tryArchiveOldCert(const std::string& dirPath)
 	{
-		if (access((dirPath+"/"+certFilename).c_str(), R_OK) == 0 and
-		    access((dirPath+"/"+fullchainFilename).c_str(), R_OK) == 0 and
-		    access((dirPath+"/"+privateKeyFilename).c_str(), R_OK) == 0)
+		if (access(dirPath.c_str(), W_OK) != 0)
+			return NO_WRITE_PRIVILEGE;
+		else if (access((dirPath+"/"+certFilename).c_str(), F_OK) != 0 or
+		         access((dirPath+"/"+fullchainFilename).c_str(), F_OK) != 0 or
+		         access((dirPath+"/"+privateKeyFilename).c_str(), F_OK) != 0)
+		    return 0;
+		else if (access((dirPath+"/"+certFilename).c_str(), R_OK) != 0 or
+		         access((dirPath+"/"+fullchainFilename).c_str(), R_OK) != 0 or
+		         access((dirPath+"/"+privateKeyFilename).c_str(), R_OK) != 0)
+		    return NO_READ_PRIVILEGE;
+		else
 		{
-			auto subDirs = Utils::getSubDirsName(dirPath);
-			int biggest = -1;
-			for (const auto& dir : subDirs)
+			try
 			{
-				if (dir.find(archiveDirNameCommonPart, 0) == std::string::npos)
-					continue;
-				int suffix = 0;
-				try {
-					suffix = std::stoi(std::regex_replace(dir, std::regex(archiveDirNameCommonPart), ""));
-				} catch (std::invalid_argument& e) { return; }
-				catch (std::out_of_range& e) { return; }
-				if (suffix > biggest)
-					biggest = suffix;
+				auto subDirs = Utils::getSubDirsName(dirPath);
+				int biggest = -1;
+				for (const auto& dir : subDirs)
+				{
+					if (dir.find(archiveDirNameCommonPart, 0) == std::string::npos)
+						continue;
+					int suffix = 0;
+					try
+					{
+						suffix = std::stoi(std::regex_replace(dir, std::regex(archiveDirNameCommonPart), ""));
+					}
+					catch (std::invalid_argument& e)
+					{
+						return IO_ERROR;
+					}
+					catch (std::out_of_range& e)
+					{
+						return IO_ERROR;
+					}
+					if (suffix > biggest)
+						biggest = suffix;
+				}
+				std::string archiveDir = dirPath + "/" + archiveDirNameCommonPart + std::to_string(biggest + 1);
+				mkdir(archiveDir.c_str(), S_IRWXU);
+				rename((dirPath + "/" + certFilename).c_str(), (archiveDir + "/" + certFilename).c_str());
+				rename((dirPath + "/" + fullchainFilename).c_str(), (archiveDir + "/" + fullchainFilename).c_str());
+				rename((dirPath + "/" + privateKeyFilename).c_str(), (archiveDir + "/" + privateKeyFilename).c_str());
+				return 0;
 			}
-			std::string archiveDir = dirPath+"/"+archiveDirNameCommonPart+std::to_string(biggest+1);
-			mkdir(archiveDir.c_str(), S_IRWXU);
-			rename((dirPath+"/"+certFilename).c_str(), (archiveDir+"/"+certFilename).c_str());
-			rename((dirPath+"/"+fullchainFilename).c_str(), (archiveDir+"/"+fullchainFilename).c_str());
-			rename((dirPath+"/"+privateKeyFilename).c_str(), (archiveDir+"/"+privateKeyFilename).c_str());
+			catch (...) { return IO_ERROR; }
 		}
 	}
 };

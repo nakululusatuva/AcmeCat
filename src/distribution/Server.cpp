@@ -35,9 +35,25 @@ void Server::acmeThread(const std::shared_ptr<CertCache>& cert, const Json::Valu
 			certsAndPrivateKey = acme.issueCertificate();
 			
 			auto[endEntityCertPEM, issuerCertPEM, privateKeyPKCS8] = certsAndPrivateKey;
-			LOG(INFO) << "ACME - Caching the new certificate in memory.";
 			cert->update(endEntityCertPEM, issuerCertPEM, privateKeyPKCS8);
-			cert->toFile(saveDir);
+			LOG(INFO) << "ACME - New certificate was cached in memory.";
+			
+			auto ret = cert->toFile(saveDir);
+			switch (ret)
+			{
+				case CertCache::IO_ERROR:
+					LOG(ERROR) << "ACME - IO Error while saving the certificate to " << saveDir << ".";
+					break;
+                case CertCache::NO_WRITE_PRIVILEGE:
+                    LOG(ERROR) << "ACME - No write privilege to save the certificate to " << saveDir << ".";
+                    break;
+				case CertCache::FAILED_TO_ARCHIVE_OLD_CERT:
+					LOG(ERROR) << "ACME - Failed to archive the old certificate.";
+					break;
+				default:
+					LOG(INFO) << "ACME - New certificate was saved under " << saveDir << ".";
+			}
+			
 			if (!shellCommand.empty())
 			{
 				LOG(INFO) << "ACME - Execute shell command \"" << shellCommand << "\"";
@@ -80,6 +96,7 @@ void Server::handlerThread(
 	LOG(INFO) << "Incoming connection from " << remoteHostInfo;
 	
 	/* Decrypt client hello and get identity */
+	std::string nickName;
 	std::shared_ptr<RSA> clientPublicKey = nullptr;
 	LOG(INFO) << logPrefix << "receiving client's identity hello.";
 	auto identityHello = Protocol::Socket::readSerial(fd);
@@ -127,7 +144,8 @@ void Server::handlerThread(
 			LOG(INFO) << "Disconnect to " << remoteHostInfo;
 			return;
 		}
-		clientPublicKey = authorizedKeys.get(fingerprint);
+		auto [name, key] = authorizedKeys.get(fingerprint);
+		nickName = name; clientPublicKey = key;
 		if (clientPublicKey == nullptr)
 		{
 			std::string msg = "client's public key fingerprint not authorized";
@@ -136,14 +154,17 @@ void Server::handlerThread(
 			LOG(INFO) << "Disconnect to " << remoteHostInfo;
 			return;
 		}
-		else LOG(INFO) << logPrefix << "fingerprint: " << fingerprint << " is authorized";
+		else
+		{
+			LOG(INFO) << logPrefix << "client's public key is in the authorized list, nickname is '" << nickName << "'.";
+		}
 	}
 	
 	/* Send a token that encrypted with client's public key */
 	auto authorizationToken = Protocol::RandomToken(32);
 	auto encryptedToken = Protocol::Serialize::AuthorizeToken(authorizationToken, clientPublicKey);
 	Protocol::Socket::writeSerial(fd, encryptedToken);
-	LOG(INFO) << logPrefix << "authorization token: " << authorizationToken << " was sent.";
+	LOG(INFO) << logPrefix << "authorization token " << authorizationToken << " was sent.";
 	
 	/* Receive decrypted result from client, compare to generated token */
 	LOG(INFO) << logPrefix << "receiving client's authorization reply.";
@@ -211,17 +232,28 @@ void Server::run()
 	else serverPrivateKey = OpensslWrap::PEM::ToRsa(privateKeyPEM);
 	
 	/* Get authorized keys */
-	std::vector<std::string> pemStrings;
-	for (const auto& pem : globalConfigs["server"]["authorized_keys"])
-		pemStrings.push_back(pem.asString());
-	auto authorizedKeys = OpensslWrap::AsymmetricRSA::PublicKeyList(pemStrings);
+	std::vector<std::tuple<std::string, std::string>> list;
+	for (const auto& nameAndPem : globalConfigs["server"]["authorized_keys"])
+		list.emplace_back(std::tuple<std::string, std::string>(nameAndPem["name"].asString(), nameAndPem["public_key"].asString()));
+	auto authorizedKeys = OpensslWrap::AsymmetricRSA::PublicKeyList(list);
 	
 	/* port, thread num, cron expression, cert cache */
 	int port = globalConfigs["server"]["port"].asInt();
 	int workersNum = globalConfigs["server"]["workers"].asInt();
 	std::string cronExpression = globalConfigs["server"]["acme"]["cron_expression"].asString();
+	std::string certSaveDir = globalConfigs["server"]["acme"]["save_dir"].asString();
 	auto cert = std::make_shared<CertCache>();
-	cert->tryLoadFromFile(globalConfigs["server"]["acme"]["save_dir"].asString()); // Try to load the cached cert from disk
+	LOG(INFO) << "Loading the current certificate from " << certSaveDir;
+	auto loadRet = cert->tryLoadFromFile(certSaveDir);
+	switch (loadRet)
+	{
+		case CertCache::IO_ERROR:
+			LOG(WARNING) << "IO error while loading the certificate.";
+		case CertCache::NO_READ_PRIVILEGE:
+			LOG(WARNING) << "Certificate does not exist yet or no reading privilege.";
+		default:
+			break;
+	}
 	
 	/* Create thread pool and start ACME work thread */
 	LOG(INFO) << "Creating thread pool with " << std::to_string(workersNum+1)
