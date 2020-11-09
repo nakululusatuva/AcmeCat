@@ -12,6 +12,6 @@
 #define MLOCKALL_FAILED 203
 #define FATAL_ERROR_OCCURS_IN_THE_MAIN_THREAD 204
 
-#define VERSION "v0.0.1"
+#define VERSION "v0.1.0"
 
 #endif //ACMED_CODES_H
