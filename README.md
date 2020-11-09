@@ -39,7 +39,7 @@ AcmeCat uses a configuration file in JSON format. Whether it is a configuration 
 
 #### For Server Mode
 Create a new config_server.json file, enter the following content, you can find uncommented templates in the res/templates directory of the project.
-```
+``` json
 {
     "log": {
         "dir": "/var/log"
@@ -80,7 +80,7 @@ Create a new config_server.json file, enter the following content, you can find 
 
 #### For Client Mode
 Create a new config_client.json file, enter the following content, you can find uncommented templates in the res/templates directory of the project.
-```
+``` json
 {
 	"log": {
 		"dir": "/var/log"

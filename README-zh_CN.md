@@ -88,7 +88,7 @@ AcmeCat使用JSON格式的配置文件，无论是server模式或client模式的
 	"client": {
 		"host": "acme.example.com",     # 运行server模式的服务端域名或ip地址
 		"port": 55000,  # 服务端端口号
-        # 运行server模式的服务端的RSA公玥，必须用\n字符代替换行
+		# 运行server模式的服务端的RSA公玥，必须用\n字符代替换行
 		"server_public_key": "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA513CrbHjrxoHh43Sf4ta\nEXAMPLE\nG9wAh/RVPh1kXMs4UjsjXRcCAwEAAQ==\n-----END PUBLIC KEY-----",
 		# 客户端的RSA密钥，必须用\n字符代替换行
         "private_key": "-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-256-CBC,AE56A0A299B8600579E8C0D24AD6BBEC\n\nAvjSciwKM6pPRAd9Lb5MPWgb/mOqRXchBWChjrvvMCeKobETM0lVnr7hJURbKAsV\nEXAMPLE\njU7m+bgaZajQmhhoA0A/Fb1iJ\n-----END RSA PRIVATE KEY-----\n",
