@@ -157,11 +157,11 @@ cron语句实例:
 
 #### RSA密钥-公玥的生成
 密钥生成
-```shell
+```shell script
 openssl genrsa -out private.pem 4096
 ```
 公玥生成
-```shell
+```shell script
 openssl rsa -in private.pem -out public.pem -pubout
 ```
 用于服务端，请将private.pem中的内容复制粘贴至服务端配置文件的"private_key"字段，将public.pem中的内容复制粘贴至客户端配置文件的"server_public_key"字段。
@@ -169,6 +169,24 @@ openssl rsa -in private.pem -out public.pem -pubout
 用于客户端，请将private.pem中的内容复制粘贴至客户端配置文件的"private_key"字段，将public.pem中的内容复制粘贴至服务端配置文件的"authorized_keys"字段。
 
 由于JSON不支持换行，对于pem文件中的公密钥，请使用\n替代换行，确保所有内容都在同一行内再复制到配置文件中。
+
+## 编译安装
+依赖：OpenSSL 1.1.1
+
+编译命令
+```shell script
+mkdir build
+cmake --build ./build --target acmecat -j4
+```
+
+编译选项
+
+|选项|描述|
+|---|---|
+|-DSTATIC_OPENSSL|是否静态链接OpenSSL库（ON/OFF）|
+|-DOPTIMIZE_LEVEL|优化等级（1～3）|
+|-DOPENSSL_INCLUDE|OpenSSL头文件目录|
+|-DOPENSSL_LIB|OpenSSL库文件目录|
 
 ## 配置为系统服务
 新建acmecat.service文件，输入以下内容，保存到/lib/systemd/system目录下。可在项目的res/templates目录下找到的模板。

@@ -170,6 +170,24 @@ For the client, please copy and paste the contents of private.pem into the "priv
 
 Since JSON does not support line breaks, for the keys in the pem file, please use \n instead of line breaks to ensure that all content is in the same line before copying to the configuration file.
 
+## How to build
+Dependency：OpenSSL 1.1.1
+
+Command to compile
+```shell script
+mkdir build
+cmake --build ./build --target acmecat -j4
+```
+
+Compile options
+
+|Option|Description|
+|---|---|
+|-DSTATIC_OPENSSL|Link OpenSSL statically (ON/OFF)|
+|-DOPTIMIZE_LEVEL|Compiler optimize level (1~3)|
+|-DOPENSSL_INCLUDE|Header directory of OpenSSL|
+|-DOPENSSL_LIB|Library directory of OpenSSL|
+
 ## Configure as System Service
 Create a new acmecat.service file, enter the following content, and save it to the /lib/systemd/system directory. The templates can be found in the res/templates directory of the project.
 ```ini
