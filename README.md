@@ -33,7 +33,7 @@ The RSA public key is used between the server and the client for secure communic
 AcmeCat uses a configuration file in JSON format. Whether it is a configuration file in server mode or client mode, it must contain the log field.
 ```
 "log": {
-    "dir": "/var/log"   # 日志文件的保存路径
+    "dir": "/var/log"   # Save directory of the log files
 },
 ```
 
